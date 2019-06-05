@@ -27,8 +27,8 @@ class UnetAudioSeparator:
         self.output_type = model_config["output_type"]
         self.context = model_config["context"]
         self.padding = "valid" if model_config["context"] else "same"
-        self.source_names = model_config["source_names"]
-        self.num_channels = 1 if model_config["mono_downmix"] else 2
+        self.num_outputs = model_config["num_outputs"]
+        self.num_inputs = model_config["num_inputs"]
         self.output_activation = model_config["output_activation"]
 
     def get_padding(self, shape):
@@ -75,12 +75,12 @@ class UnetAudioSeparator:
             # Output filters
             output_shape = output_shape - self.output_filter_size + 1
 
-            input_shape = np.concatenate([[shape[0]], [input_shape], [self.num_channels]])
-            output_shape = np.concatenate([[shape[0]], [output_shape], [self.num_channels]])
+            input_shape = np.concatenate([[shape[0]], [input_shape], [self.num_inputs]])
+            output_shape = np.concatenate([[shape[0]], [output_shape], [self.num_outputs]])
 
             return input_shape, output_shape
         else:
-            return [shape[0], shape[1], self.num_channels], [shape[0], shape[1], self.num_channels]
+            return [shape[0], shape[1], self.num_inputs], [shape[0], shape[1], self.num_outputs]
 
     def get_output(self, input, training, return_spectrogram=False, reuse=True):
         '''
@@ -91,7 +91,8 @@ class UnetAudioSeparator:
         '''
         with tf.variable_scope("separator", reuse=reuse):
             enc_outputs = list()
-            current_layer = input
+            
+            current_layer = tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
 
             # Down-convolution: Repeat strided conv
             for i in range(self.num_layers):
@@ -136,9 +137,9 @@ class UnetAudioSeparator:
                 raise NotImplementedError
 
             if self.output_type == "direct":
-                return Models.OutputLayer.independent_outputs(current_layer, self.source_names, self.num_channels, self.output_filter_size, self.padding, out_activation)
+                return Models.OutputLayer.independent_outputs(current_layer, self.num_outputs, self.output_filter_size, self.padding, out_activation)
             elif self.output_type == "difference":
                 cropped_input = Utils.crop(input,current_layer.get_shape().as_list(), match_feature_dim=False)
-                return Models.OutputLayer.difference_output(cropped_input, current_layer, self.source_names, self.num_channels, self.output_filter_size, self.padding, out_activation, training)
+                return Models.OutputLayer.difference_output(cropped_input, current_layer, self.num_outputs, self.output_filter_size, self.padding, out_activation, training)
             else:
                 raise NotImplementedError

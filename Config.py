@@ -6,7 +6,7 @@ config_ingredient = Ingredient("cfg")
 @config_ingredient.config
 def cfg():
     # Base configuration
-    model_config = {"musdb_path" : "/mnt/windaten/Datasets/MUSDB18/", # SET MUSDB PATH HERE, AND SET CCMIXTER PATH IN CCMixter.xml
+    model_config = {"enst_path" : "/import/c4dm-04/davem/ENST-drums/", # SET MUSDB PATH HERE, AND SET CCMIXTER PATH IN CCMixter.xml
                     "estimates_path" : "/mnt/windaten/Source_Estimates", # SET THIS PATH TO WHERE YOU WANT SOURCE ESTIMATES PRODUCED BY THE TRAINED MODEL TO BE SAVED. Folder itself must exist!
                     "data_path" : "data", # Set this to where the preprocessed dataset should be saved
 
@@ -18,36 +18,30 @@ def cfg():
                     'cache_size': 4000, # Number of audio snippets buffered in the random shuffle queue. Larger is better, since workers put multiple examples of one song into this queue. The number of different songs that is sampled from with each batch equals cache_size / num_snippets_per_track. Set as high as your RAM allows.
                     'num_workers' : 4, # Number of processes used for each TF map operation used when loading the dataset
                     "num_snippets_per_track" : 100, # Number of snippets that should be extracted from each song at a time after loading it. Higher values make data loading faster, but can reduce the batches song diversity
-                    'num_layers' : 12, # How many U-Net layers
+                    'num_layers' : 10, # How many U-Net layers
                     'filter_size' : 15, # For Wave-U-Net: Filter size of conv in downsampling block
                     'merge_filter_size' : 5, # For Wave-U-Net: Filter size of conv in upsampling block
                     'input_filter_size' : 15, # For Wave-U-Net: Filter size of first convolution in first downsampling block
                     'output_filter_size': 1, # For Wave-U-Net: Filter size of first convolution in first downsampling block
                     'num_initial_filters' : 24, # Number of filters for convolution in first layer of network
                     "num_frames": 16384, # DESIRED number of time frames in the output waveform per samples (could be changed when using valid padding)
-                    'expected_sr': 22050,  # Downsample all audio input to this sampling rate
-                    'mono_downmix': True,  # Whether to downsample the audio input
+                    'expected_sr': 44100,  # Downsample all audio input to this sampling rate
+                    'mono_downmix': False,  # Whether to downsample the audio input
                     'output_type' : 'direct', # Type of output layer, either "direct" or "difference". Direct output: Each source is result of tanh activation and independent. DIfference: Last source output is equal to mixture input - sum(all other sources)
-                    'output_activation' : 'tanh', # Activation function for output layer. "tanh" or "linear". Linear output involves clipping to [-1,1] at test time, and might be more stable than tanh
+                    'output_activation' : 'linear', # Activation function for output layer. "tanh" or "linear". Linear output involves clipping to [-1,1] at test time, and might be more stable than tanh
                     'context' : False, # Type of padding for convolutions in separator. If False, feature maps double or half in dimensions after each convolution, and convolutions are padded with zeros ("same" padding). If True, convolution is only performed on the available mixture input, thus the output is smaller than the input
                     'network' : 'unet', # Type of network architecture, either unet (our model) or unet_spectrogram (Jansson et al 2017 model)
                     'upsampling' : 'linear', # Type of technique used for upsampling the feature maps in a unet architecture, either 'linear' interpolation or 'learned' filling in of extra samples
-                    'task' : 'voice', # Type of separation task. 'voice' : Separate music into voice and accompaniment. 'multi_instrument': Separate music into guitar, bass, vocals, drums and other (Sisec)
-                    'augmentation' : True, # Random attenuation of source signals to improve generalisation performance (data augmentation)
+                    'task' : 'dry', # Type of separation task. 'voice' : Separate music into voice and accompaniment. 'multi_instrument': Separate music into guitar, bass, vocals, drums and other (Sisec)
+                    'augmentation' : False, # Random attenuation of source signals to improve generalisation performance (data augmentation)
                     'raw_audio_loss' : True, # Only active for unet_spectrogram network. True: L2 loss on audio. False: L1 loss on spectrogram magnitudes for training and validation and test loss
                     'worse_epochs' : 20, # Patience for early stoppping on validation set
                     }
     experiment_id = np.random.randint(0,1000000)
-
-    # Set output sources
-    if model_config["task"] == "multi_instrument":
-        model_config["source_names"] = ["bass", "drums", "other", "vocals"]
-    elif model_config["task"] == "voice":
-        model_config["source_names"] = ["accompaniment", "vocals"]
-    else:
-        raise NotImplementedError
-    model_config["num_sources"] = len(model_config["source_names"])
-    model_config["num_channels"] = 1 if model_config["mono_downmix"] else 2
+        
+    model_config["source_names"] = ['hi-hat', 'kick', 'overhead_L', 'overhead_R', 'snare', 'tom_1', 'tom_2', 'tom_3'] 
+    model_config["num_inputs"] = len(model_config["source_names"])
+    model_config["num_outputs"] = 1 if model_config["mono_downmix"] else 2
 
 @config_ingredient.named_config
 def baseline():

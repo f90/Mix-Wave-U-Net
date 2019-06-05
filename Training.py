@@ -44,23 +44,21 @@ def train(model_config, experiment_id, load_model=None):
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch["mix"], True, not model_config["raw_audio_loss"], reuse=False) # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    separator_sources = separator_func(batch, True, not model_config["raw_audio_loss"], reuse=False) # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
 
     # Supervised objective: MSE for raw audio, MAE for magnitude space (Jansson U-Net)
     separator_loss = 0
-    for key in model_config["source_names"]:
-        real_source = batch[key]
-        sep_source = separator_sources[key]
+    real_source = batch['mix']
+    sep_source = separator_sources['mix']
 
-        if model_config["network"] == "unet_spectrogram" and not model_config["raw_audio_loss"]:
-            window = functools.partial(window_ops.hann_window, periodic=True)
-            stfts = tf.contrib.signal.stft(tf.squeeze(real_source, 2), frame_length=1024, frame_step=768,
-                                           fft_length=1024, window_fn=window)
-            real_mag = tf.abs(stfts)
-            separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
-        else:
-            separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
-    separator_loss = separator_loss / float(model_config["num_sources"]) # Normalise by number of sources
+    if model_config["network"] == "unet_spectrogram" and not model_config["raw_audio_loss"]:
+        window = functools.partial(window_ops.hann_window, periodic=True)
+        stfts = tf.contrib.signal.stft(tf.squeeze(real_source, 2), frame_length=1024, frame_step=768,
+                                       fft_length=1024, window_fn=window)
+        real_mag = tf.abs(stfts)
+        separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
+    else:
+        separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
 
     # TRAINING CONTROL VARIABLES
     global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
@@ -135,7 +133,7 @@ def optimise(model_config, experiment_id):
         while worse_epochs < model_config["worse_epochs"]: # Early stopping on validation set after a few epochs
             print("EPOCH: " + str(epoch))
             model_path = train(load_model=model_path)
-            curr_loss = Test.test(model_config, model_folder=str(experiment_id), partition="valid", load_model=model_path)
+            curr_loss = Test.test(model_config, model_folder=str(experiment_id), partition="val", load_model=model_path)
             epoch += 1
             if curr_loss < best_loss:
                 worse_epochs = 0
@@ -163,4 +161,4 @@ def run(cfg):
     print("Supervised training finished! Saved model at " + sup_model_path + ". Performance: " + str(sup_loss))
 
     # Evaluate trained model on MUSDB
-    Evaluate.produce_musdb_source_estimates(model_config, sup_model_path, model_config["musdb_path"], model_config["estimates_path"])
+#     Evaluate.produce_musdb_source_estimates(model_config, sup_model_path, model_config["musdb_path"], model_config["estimates_path"])

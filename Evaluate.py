@@ -9,8 +9,6 @@ import glob
 import Models.UnetAudioSeparator
 import Models.UnetSpectrogramSeparator
 
-import musdb
-import museval
 import Utils
 
 def predict(track, model_config, load_model, results_dir=None):
@@ -65,13 +63,6 @@ def predict(track, model_config, load_model, results_dir=None):
 
     if model_config["mono_downmix"] and mix_channels > 1: # Convert to multichannel if mixture input was multichannel by duplicating mono estimate
         pred_audio = {name : np.tile(pred_audio[name], [1, mix_channels]) for name in pred_audio.keys()}
-
-    # Evaluate using museval, if we are currently evaluating MUSDB
-    if results_dir is not None:
-        scores = museval.eval_mus_track(track, pred_audio, output_dir=results_dir)
-
-        # print nicely formatted mean scores
-        print(scores)
 
     # Close session, clear computational graph
     sess.close()
@@ -144,19 +135,6 @@ def predict_track(model_config, sess, mix_audio, mix_sr, sep_input_shape, sep_ou
 
     return source_preds
 
-def produce_musdb_source_estimates(model_config, load_model, musdb_path, output_path, subsets=None):
-    '''
-    Predicts source estimates for MUSDB for a given model checkpoint and configuration, and evaluate them.
-    :param model_config: Model configuration of the model to be evaluated
-    :param load_model: Model checkpoint path
-    :return: 
-    '''
-    print("Evaluating trained model saved at " + str(load_model)+ " on MUSDB and saving source estimate audio to " + str(output_path))
-
-    mus = musdb.DB(root_dir=musdb_path)
-    predict_fun = lambda track : predict(track, model_config, load_model, output_path)
-    assert(mus.test(predict_fun))
-    mus.run(predict_fun, estimates_dir=output_path, subsets=subsets)
 
 def produce_source_estimates(model_config, load_model, input_path, output_path=None):
     '''

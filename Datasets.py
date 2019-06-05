@@ -71,7 +71,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
                     
                 except:
                     print('found None')
-                    audio = np.zeros(lengthMix, dtype=np.float32)
+                    audio = np.zeros((lengthMix,1), dtype=np.float32)
                     
                 if key is not 'mix':
                     assert(audio.shape[1] == 1)

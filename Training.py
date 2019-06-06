@@ -58,7 +58,7 @@ def train(model_config, experiment_id, load_model=None):
         real_mag = tf.abs(stfts)
         separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
     else:
-        separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
+        separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
 
     # TRAINING CONTROL VARIABLES
     global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)

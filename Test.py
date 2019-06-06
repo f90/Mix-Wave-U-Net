@@ -66,7 +66,7 @@ def test(model_config, partition, model_folder, load_model):
         real_mag = tf.abs(stfts)
         separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
     else:
-        separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
+        separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
         
     while True:
         try:

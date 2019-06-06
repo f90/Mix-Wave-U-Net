@@ -6,6 +6,7 @@ def independent_outputs(featuremap, source_names, num_channels, filter_width, pa
     outputs = dict()
     for name in source_names:
         outputs[name] = tf.layers.conv1d(featuremap, num_channels, filter_width, activation=activation, padding=padding)
+#         tf.summary.audio(name, outputs[name], 44100, max_outputs=1, collections=["sup"])
     return outputs
 
 def difference_output(input_mix, featuremap, source_names, num_channels, filter_width, padding, activation, training):

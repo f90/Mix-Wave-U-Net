@@ -13,23 +13,31 @@ import tensorflow as tf
 import pickle
 
 
-def take_random_snippets(sample, keys, input_shape, num_samples):
+def take_random_snippets(sample, keys, input_shape, output_shape, num_samples):
     # Take a sample (collection of audio files) and extract snippets from it at a number of random positions
     start_pos = tf.random_uniform([num_samples], 0, maxval=sample["length"] - input_shape[0], dtype=tf.int64)
-    return take_snippets_at_pos(sample, keys, start_pos, input_shape, num_samples)
+    return take_snippets_at_pos(sample, keys, start_pos, input_shape[0], output_shape[1], num_samples)
 
 def take_all_snippets(sample, keys, input_shape, output_shape):
     # Take a sample and extract snippets from the audio signals, using a hop size equal to the output size of the network
     start_pos = tf.range(0, sample["length"] - input_shape[0], delta=output_shape[0], dtype=tf.int64)
     num_samples = start_pos.shape[0]
-    return take_snippets_at_pos(sample, keys, start_pos, input_shape, num_samples)
+    return take_snippets_at_pos(sample, keys, start_pos, input_shape[0], output_shape[1], num_samples)
 
-def take_snippets_at_pos(sample, keys, start_pos, input_shape, num_samples):
+def take_snippets_at_pos(sample, keys, start_pos, length, output_channels, num_samples):
     # Take a sample and extract snippets from the audio signals at the given start positions with the given number of samples width
     batch = dict()
     for key in keys:
-        batch[key] = tf.map_fn(lambda pos: sample[key][pos:pos + input_shape[0], :], start_pos, dtype=tf.float32)
-        batch[key].set_shape([num_samples, input_shape[0], input_shape[1]])
+        
+        if key is 'mix':
+            
+            batch[key] = tf.map_fn(lambda pos: sample[key][pos:pos + length, :], start_pos, dtype=tf.float32)
+            batch[key].set_shape([num_samples, length, output_channels])
+        else:
+            batch[key] = tf.map_fn(lambda pos: sample[key][pos:pos + length, :], start_pos, dtype=tf.float32)
+            batch[key].set_shape([num_samples, length, 1])
+            
+            
 
     return tf.data.Dataset.from_tensor_slices(batch)
 
@@ -62,15 +70,11 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
             for key in all_keys:
                 
                 try:
-                    print(sample[key])
                     audio, _ = Utils.load(sample[key], sr=model_config["expected_sr"], mono=model_config["mono_downmix"]) 
-                    print(key, audio.shape[0], _)
                     if key is 'mix':
                         lengthMix = audio.shape[0]
-                        print(lengthMix)
                     
                 except:
-                    print('found None')
                     audio = np.zeros((lengthMix,1), dtype=np.float32)
                     
                 if key is not 'mix':
@@ -96,6 +100,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
 
         # All audio tracks must be exactly same length and channels
         length = audio_tracks["mix"].shape[0]
+        channels = audio_tracks["mix"].shape[1]
         for audio in audio_tracks.values():
             assert(audio.shape[0] == length)
 
@@ -109,7 +114,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
     for writer in writers:
         writer.close()
 
-def parse_record(example_proto, source_names, shape):
+def parse_record(example_proto, source_names, output_channels):
     # Parse record from TFRecord file
 
     all_names = source_names + ["mix"]
@@ -122,10 +127,14 @@ def parse_record(example_proto, source_names, shape):
 
     # Reshape
     length = tf.cast(parsed_features["length"], tf.int64)
-    channels = tf.constant(shape[-1], tf.int64) #tf.cast(parsed_features["channels"], tf.int64)
+    channels = tf.constant(output_channels, tf.int64) #tf.cast(parsed_features["channels"], tf.int64)
     sample = dict()
     for key in all_names:
-        sample[key] = tf.reshape(parsed_features[key], tf.stack([length, channels]))
+        if key is 'mix':
+            sample[key] = tf.reshape(parsed_features[key], tf.stack([length, channels]))
+        else:
+            sample[key] = tf.reshape(parsed_features[key], tf.stack([length, 1]))
+            
     sample["length"] = length
     sample["channels"] = channels
 
@@ -180,7 +189,7 @@ def get_dataset(model_config, input_shape, output_shape, partition):
         # The dataset structure is a dictionary with "train", "valid", "test" keys, whose entries are lists, where each element represents a song.
         # Each song is represented as a dictionary containing elements mix, acc, vocal or mix, bass, drums, other, vocal depending on the task.
 
-        num_cores = 1
+        num_cores = 8
 
         for curr_partition in ["train", "val", "test"]:
             print("Writing " + curr_partition + " partition...")
@@ -211,12 +220,12 @@ def get_dataset(model_config, input_shape, output_shape, partition):
     records_files = glob.glob(os.path.join(dataset_folder, "*.tfrecords"))
     random.shuffle(records_files)
     dataset = tf.data.TFRecordDataset(records_files)
-    dataset = dataset.map(lambda x : parse_record(x, model_config["source_names"], input_shape[1:]), num_parallel_calls=model_config["num_workers"])
+    dataset = dataset.map(lambda x : parse_record(x, model_config["source_names"], output_shape[-1]), num_parallel_calls=model_config["num_workers"])
     dataset = dataset.prefetch(10)
 
     # Take random samples from each song
     if partition == "train":
-        dataset = dataset.flat_map(lambda x : take_random_snippets(x, model_config["source_names"] + ["mix"], input_shape[1:], model_config["num_snippets_per_track"]))
+        dataset = dataset.flat_map(lambda x : take_random_snippets(x, model_config["source_names"] + ["mix"], input_shape[1:], output_shape[1:], model_config["num_snippets_per_track"]))
     else:
         dataset = dataset.flat_map(lambda x : take_all_snippets(x, model_config["source_names"] + ["mix"], input_shape[1:], output_shape[1:]))
     dataset = dataset.prefetch(100)

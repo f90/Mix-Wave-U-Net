@@ -89,10 +89,12 @@ class UnetAudioSeparator:
         :param reuse: Whether to create new parameter variables or reuse existing ones
         :return: U-Net output: List of source estimates. Each item is a 3D tensor [batch_size, num_out_samples, num_channels]
         '''
+        input = tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
+        
         with tf.variable_scope("separator", reuse=reuse):
             enc_outputs = list()
             
-            current_layer = tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
+            current_layer = input #tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
 
             # Down-convolution: Repeat strided conv
             for i in range(self.num_layers):
@@ -137,9 +139,9 @@ class UnetAudioSeparator:
                 raise NotImplementedError
 
             if self.output_type == "direct":
-                return Models.OutputLayer.independent_outputs(current_layer, self.num_outputs, self.output_filter_size, self.padding, out_activation)
+                return Models.OutputLayer.independent_outputs(current_layer, ['mix'], self.num_outputs, self.output_filter_size, self.padding, out_activation)
             elif self.output_type == "difference":
                 cropped_input = Utils.crop(input,current_layer.get_shape().as_list(), match_feature_dim=False)
-                return Models.OutputLayer.difference_output(cropped_input, current_layer, self.num_outputs, self.output_filter_size, self.padding, out_activation, training)
+                return Models.OutputLayer.difference_output(cropped_input, current_layer, ['mix'], self.num_outputs, self.output_filter_size, self.padding, out_activation, training)
             else:
                 raise NotImplementedError

@@ -46,6 +46,13 @@ def cfg():
 @config_ingredient.named_config
 def baseline():
     print("Training baseline model")
+    
+@config_ingredient.named_config
+def baseline_wet():
+    print("Training wet model")
+    model_config = {
+        "task" : "wet"
+    }
 
 @config_ingredient.named_config
 def baseline_diff():

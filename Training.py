@@ -36,15 +36,18 @@ def train(model_config, experiment_id, load_model=None):
     separator_func = separator_class.get_output
 
     # Placeholders and input normalisation
+
     dataset = Datasets.get_dataset(model_config, sep_input_shape, sep_output_shape, partition="train")
     iterator = dataset.make_one_shot_iterator()
     batch = iterator.get_next()
+    
+    batch_input = tf.concat([batch[key] for key in sorted(batch.keys()) if key != 'mix'], 2)
 
     print("Training...")
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch, True, not model_config["raw_audio_loss"], reuse=False) # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    separator_sources = separator_func(batch_input, True, not model_config["raw_audio_loss"], reuse=False) # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
 
     # Supervised objective: MSE for raw audio, MAE for magnitude space (Jansson U-Net)
     separator_loss = 0

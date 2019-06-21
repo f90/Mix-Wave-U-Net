@@ -37,7 +37,7 @@ def random_amplify(sample):
 
 def crop_sample(sample, crop_frames):
     for key, val in sample.items():
-        if key != "mix" and crop_frames > 0:
+        if key == "mix" and crop_frames > 0:
             sample[key] = val[crop_frames:-crop_frames,:]
     return sample
 

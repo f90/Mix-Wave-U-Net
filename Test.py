@@ -26,12 +26,14 @@ def test(model_config, partition, model_folder, load_model):
     dataset = Datasets.get_dataset(model_config, sep_input_shape, sep_output_shape, partition=partition)
     iterator = dataset.make_one_shot_iterator()
     batch = iterator.get_next()
+    
+    batch_input = tf.concat([batch[key] for key in sorted(batch.keys()) if key != 'mix'], 2)
 
     print("Testing...")
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch, False, not model_config["raw_audio_loss"], reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    separator_sources = separator_func(batch_input, False, not model_config["raw_audio_loss"], reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
 
     global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
 

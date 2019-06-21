@@ -84,10 +84,13 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
                         assert(audio.shape[1] == 2)
                     else:
                         assert(audio.shape[1] == 1)
+                        
+                    audio = audio/np.max(np.abs(audio))
 
 #                 if not model_config["mono_downmix"] and audio.shape[1] == 1:
 #                     print("WARNING: Had to duplicate mono track to generate stereo")
 #                     audio = np.tile(audio, [1, 2])
+
 
                 audio_tracks[key] = audio
         except Exception as e:
@@ -150,7 +153,7 @@ def get_dataset(model_config, input_shape, output_shape, partition):
     :return: Tensorflow dataset object
     '''
 
-
+    
     # Check if pre-processed dataset is already available for this model config and partition
     dataset_name = "task_" + model_config["task"] + "_" + \
                    "sr_" + str(model_config["expected_sr"]) + "_" + \

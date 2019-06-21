@@ -53,6 +53,16 @@ def baseline_wet():
     model_config = {
         "task" : "wet"
     }
+    
+@config_ingredient.named_config
+def norm_context_wet():
+    print("Training wet model")
+    model_config = {
+        "task" : "wet",
+        "data_path" : "data_norm",
+        "num_frames" : 88200,
+        "context" : True
+    }
 
 @config_ingredient.named_config
 def baseline_diff():

@@ -77,9 +77,10 @@ class UnetAudioSeparator:
 
             input_shape = np.concatenate([[shape[0]], [input_shape], [self.num_inputs]])
             output_shape = np.concatenate([[shape[0]], [output_shape], [self.num_outputs]])
-
+            print('input shape: %s - output shape: %s' % (str(input_shape), str(output_shape)))
             return input_shape, output_shape
         else:
+            assert(shape[1]%np.power(2,self.num_layers)==0) #input should be divisible by downsapmling factor of the model
             return [shape[0], shape[1], self.num_inputs], [shape[0], shape[1], self.num_outputs]
 
     def get_output(self, input, training, return_spectrogram=False, reuse=True):
@@ -89,7 +90,7 @@ class UnetAudioSeparator:
         :param reuse: Whether to create new parameter variables or reuse existing ones
         :return: U-Net output: List of source estimates. Each item is a 3D tensor [batch_size, num_out_samples, num_channels]
         '''
-        input = tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
+        
         
         with tf.variable_scope("separator", reuse=reuse):
             enc_outputs = list()

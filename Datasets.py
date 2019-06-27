@@ -162,30 +162,11 @@ def get_dataset(model_config, input_shape, output_shape, partition):
 
     if not os.path.exists(main_folder):
         # We have to prepare the MUSDB dataset
-        print("Preparing MUSDB dataset! This could take a while...")
+        print("Preparing dataset! This could take a while...")
 
-        
+        dataset = get_dataset_pickle(model_config)
 
-        # MUSDB base dataset loaded now, now create task-specific dataset based on that
-        if model_config["task"] == "dry":
-               
-            with open('data/dataDryDict.pkl', "rb") as fp:
-                dataset = pickle.load(fp)
-        
-        elif model_config["task"] == "wet":
-               
-            with open('data/dataWetDict.pkl', "rb") as fp:
-                dataset = pickle.load(fp)
-                
-        for partition in ["train", "val", "test"]:
-
-            for idx in range(len(dataset[partition])):
-                
-                for key in dataset[partition][idx].keys():
-                    
-                    if dataset[partition][idx][key] is not None:
-                        dataset[partition][idx][key] = os.path.join(model_config['enst_path'],dataset[partition][idx][key][1:])
-                        
+      
 
         # Convert audio files into TFRecords now
 
@@ -247,6 +228,32 @@ def get_dataset(model_config, input_shape, output_shape, partition):
     dataset = dataset.prefetch(1)
 
     return dataset
+
+def get_dataset_pickle(model_config):
+    
+    if model_config["task"] == "dry":
+               
+        with open('data/dataDryDict.pkl', "rb") as fp:
+            dataset = pickle.load(fp)
+        
+    elif model_config["task"] == "wet":
+
+        with open('data/dataWetDict.pkl', "rb") as fp:
+            dataset = pickle.load(fp)
+                
+    for partition in ["train", "val", "test"]:
+
+        for idx in range(len(dataset[partition])):
+
+            for key in dataset[partition][idx].keys():
+
+                if dataset[partition][idx][key] is not None:
+                    dataset[partition][idx][key] = os.path.join(model_config['enst_path'],dataset[partition][idx][key][1:])
+
+
+    return dataset     
+            
+            
 
 def get_path(db_path, instrument_node):
     return db_path + os.path.sep + instrument_node.xpath("./relativeFilepath")[0].text

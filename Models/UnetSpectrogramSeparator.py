@@ -4,7 +4,6 @@ import Utils
 from Utils import LeakyReLU
 import numpy as np
 import functools
-from tensorflow.contrib.signal.python.ops import window_ops
 
 class UnetSpectrogramSeparator:
     '''
@@ -48,9 +47,9 @@ class UnetSpectrogramSeparator:
         :return: U-Net output: If return_spectrogram: Accompaniment and voice magnitudes as length-two list with two 4D tensors. Otherwise Two 3D tensors containing the raw audio estimates
         '''
         # Setup STFT computation
-        window = functools.partial(window_ops.hann_window, periodic=True)
+        window = functools.partial(tf.signal.hann_window, periodic=True)
         inv_window = tf.contrib.signal.inverse_stft_window_fn(self.hop, forward_window_fn=window)
-        with tf.variable_scope("separator", reuse=reuse):
+        with tf.compat.v1.variable_scope("separator", reuse=reuse):
             # Compute spectrogram
             assert(input.get_shape().as_list()[2] == 1) # Model works ONLY on mono
             stfts = tf.contrib.signal.stft(tf.squeeze(input, 2), frame_length=self.frame_len, frame_step=self.hop, fft_length=self.frame_len, window_fn=window)

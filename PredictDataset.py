@@ -1,3 +1,4 @@
+import soundfile
 from sacred import Experiment
 from Config import config_ingredient
 import Evaluate, Datasets, Utils
@@ -56,7 +57,7 @@ def main(cfg, model_path, output_path):
         target, sr = Utils.load(track['mix'], sr=None, mono=False) 
         target = target/np.max(np.abs(target))
         
-        librosa.output.write_wav(output_track+'_target.wav', target, sr=sr)
+        soundfile.write(output_track+'_target.wav', target, sr)
         
         output, _ = Utils.load(output_track, sr=None, mono=False) 
         

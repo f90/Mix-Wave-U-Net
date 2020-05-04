@@ -6,7 +6,7 @@ config_ingredient = Ingredient("cfg")
 @config_ingredient.config
 def cfg():
     # Base configuration
-    model_config = {"enst_path" : "/import/c4dm-04/davem/ENST-drums/", # SET MUSDB PATH HERE, AND SET CCMIXTER PATH IN CCMixter.xml
+    model_config = {"enst_path" : "/mnt/windaten/Datasets/ENST_Drums", # SET MUSDB PATH HERE, AND SET CCMIXTER PATH IN CCMixter.xml
                     "estimates_path" : "/mnt/windaten/Source_Estimates", # SET THIS PATH TO WHERE YOU WANT SOURCE ESTIMATES PRODUCED BY THE TRAINED MODEL TO BE SAVED. Folder itself must exist!
                     "data_path" : "data", # Set this to where the preprocessed dataset should be saved
 
@@ -44,129 +44,18 @@ def cfg():
     model_config["num_outputs"] = 1 if model_config["mono_downmix"] else 2
 
 @config_ingredient.named_config
-def baseline():
-    print("Training baseline model")
-    
-@config_ingredient.named_config
-def baseline_wet():
+def context_wet():
     print("Training wet model")
     model_config = {
-        "task" : "wet"
-    }
-    
-@config_ingredient.named_config
-def norm_context_wet():
-    print("Training wet model")
-    model_config = {
-        "task" : "wet",
-        "data_path" : "data_norm",
-        "num_frames" : 88200,
-        "context" : True
+        "task": "wet",
+        "num_frames": 88200,
+        "context": True
     }
 
 @config_ingredient.named_config
-def baseline_diff():
-    print("Training baseline model with difference output")
+def context_dry():
+    print("Training dry model")
     model_config = {
-        "output_type" : "difference"
-    }
-
-@config_ingredient.named_config
-def baseline_context():
-    print("Training baseline model with difference output and input context (valid convolutions)")
-    model_config = {
-        "output_type" : "difference",
-        "context" : True
-    }
-
-@config_ingredient.named_config
-def baseline_stereo():
-    print("Training baseline model with difference output and input context (valid convolutions) and stereo input/output")
-    model_config = {
-        "output_type" : "difference",
-        "context" : True,
-        "mono_downmix" : False
-    }
-
-@config_ingredient.named_config
-def full():
-    print("Training full singing voice separation model, with difference output and input context (valid convolutions) and stereo input/output, and learned upsampling layer")
-    model_config = {
-        "output_type" : "difference",
-        "context" : True,
-        "upsampling": "learned",
-        "mono_downmix" : False
-    }
-
-@config_ingredient.named_config
-def full_44KHz():
-    print("Training full singing voice separation model, with difference output and input context (valid convolutions) and stereo input/output, and learned upsampling layer, and 44.1 KHz sampling rate")
-    model_config = {
-        "output_type" : "difference",
-        "context" : True,
-        "upsampling": "learned",
-        "mono_downmix" : False,
-        "expected_sr" : 44100
-    }
-
-@config_ingredient.named_config
-def baseline_context_smallfilter_deep():
-    model_config = {
-        "output_type": "difference",
-        "context": True,
-        "num_layers" : 14,
-        "duration" : 7,
-        "filter_size" : 5,
-        "merge_filter_size" : 1
-    }
-
-@config_ingredient.named_config
-def full_multi_instrument():
-    print("Training multi-instrument separation with best model")
-    model_config = {
-        "output_type": "difference",
-        "context": True,
-        "upsampling": "linear",
-        "mono_downmix": False,
-        "task" : "multi_instrument"
-    }
-
-@config_ingredient.named_config
-def baseline_comparison():
-    model_config = {
-        "batch_size": 4, # Less output since model is so big. Doesn't matter since the model's output is not dependent on its output or input size (only convolutions)
-
-        "output_type": "difference",
-        "context": True,
-        "num_frames" : 768*127 + 1024,
-        "duration" : 13,
-        "expected_sr" : 8192,
-        "num_initial_filters" : 34
-    }
-
-@config_ingredient.named_config
-def unet_spectrogram():
-    model_config = {
-        "batch_size": 4, # Less output since model is so big.
-
-        "network" : "unet_spectrogram",
-        "num_layers" : 6,
-        "expected_sr" : 8192,
-        "num_frames" : 768 * 127 + 1024, # hop_size * (time_frames_of_spectrogram_input - 1) + fft_length
-        "duration" : 13,
-        "num_initial_filters" : 16
-    }
-
-@config_ingredient.named_config
-def unet_spectrogram_l1():
-    model_config = {
-        "batch_size": 4, # Less output since model is so big.
-
-        "network" : "unet_spectrogram",
-        "num_layers" : 6,
-        "expected_sr" : 8192,
-        "num_frames" : 768 * 127 + 1024, # hop_size * (time_frames_of_spectrogram_input - 1) + fft_length
-        "duration" : 13,
-        "num_initial_filters" : 16,
-        "raw_audio_loss" : False
+        "num_frames": 88200,
+        "context": True
     }

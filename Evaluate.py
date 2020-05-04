@@ -1,4 +1,5 @@
 import numpy as np
+import soundfile
 import tensorflow as tf
 import librosa
 
@@ -35,7 +36,7 @@ def predict(audio, model_config, load_model):
     sep_input_shape[0] = 1
     sep_output_shape[0] = 1
 
-    tracks_ph = tf.placeholder(tf.float32, sep_input_shape)
+    tracks_ph = tf.compat.v1.placeholder(tf.float32, sep_input_shape)
 
     print("Testing...")
 
@@ -45,12 +46,12 @@ def predict(audio, model_config, load_model):
 
     # Start session and queue input threads
     sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
+    sess.run(tf.compat.v1.global_variables_initializer())
 
     # Load model
     # Load pretrained model to continue training, if we are supposed to
-    restorer = tf.train.Saver(None, write_version=tf.train.SaverDef.V2)
-    print("Num of variables" + str(len(tf.global_variables())))
+    restorer = tf.compat.v1.train.Saver(None, write_version=tf.compat.v1.train.SaverDef.V2)
+    print("Num of variables" + str(len(tf.compat.v1.global_variables())))
     restorer.restore(sess, load_model)
     print('Pre-trained model restored for song prediction')
 
@@ -62,7 +63,7 @@ def predict(audio, model_config, load_model):
 
     # Close session, clear computational graph
     sess.close()
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
 
     return mix_pred
 
@@ -93,14 +94,13 @@ def predict_track(model_config, sess, audio, sep_input_shape, sep_output_shape, 
 
     # Preallocate source predictions (same shape as input mixture)
     mix_time_frames = audio[key].shape[0]
-    mix_preds = np.zeros((mix_time_frames, sep_output_shape[2]), np.float32)
-#     mix_preds = {name : np.zeros(mix_audio.shape, np.float32) for name in model_config["source_names"]}
+    mix_preds = np.asfortranarray(np.zeros((mix_time_frames, sep_output_shape[2]), np.float32))
 
     input_time_frames = sep_input_shape[1]
     output_time_frames = sep_output_shape[1]
 
     # Pad mixture across time at beginning and end so that neural network can make prediction at the beginning and end of signal
-    pad_time_frames = (input_time_frames - output_time_frames) / 2
+    pad_time_frames = (input_time_frames - output_time_frames) // 2
     
 
     for key in audio.keys():     
@@ -178,5 +178,5 @@ def produce_source_estimates(model_config, load_model, tracksdict, output_path):
         os.makedirs(directory)
     assert(os.path.exists(directory))
     print(output_path)
-    librosa.output.write_wav(output_path, mix_pred, sr)
+    soundfile.write(output_path, mix_pred, sr)
 

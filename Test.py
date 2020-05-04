@@ -1,5 +1,4 @@
 import tensorflow as tf
-from tensorflow.contrib.signal.python.ops import window_ops
 import numpy as np
 import os
 
@@ -35,17 +34,17 @@ def test(model_config, partition, model_folder, load_model):
     # Separator
     separator_sources = separator_func(batch_input, False, not model_config["raw_audio_loss"], reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
 
-    global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
+    global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
 
     # Start session and queue input threads
     sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
-    writer = tf.summary.FileWriter(model_config["log_dir"] + os.path.sep +  model_folder, graph=sess.graph)
+    sess.run(tf.compat.v1.global_variables_initializer())
+    writer = tf.compat.v1.summary.FileWriter(model_config["log_dir"] + os.path.sep +  model_folder, graph=sess.graph)
 
     # CHECKPOINTING
     # Load pretrained model to test
-    restorer = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2)
-    print("Num of variables" + str(len(tf.global_variables())))
+    restorer = tf.train.Saver(tf.compat.v1.global_variables(), write_version=tf.compat.v1.train.SaverDef.V2)
+    print("Num of variables" + str(len(tf.compat.v1.global_variables())))
     restorer.restore(sess, load_model)
     print('Pre-trained model restored for testing')
 
@@ -62,7 +61,7 @@ def test(model_config, partition, model_folder, load_model):
     sep_source = separator_sources['mix']
 
     if model_config["network"] == "unet_spectrogram" and not model_config["raw_audio_loss"]:
-        window = functools.partial(window_ops.hann_window, periodic=True)
+        window = functools.partial(tf.signal.hann_window, periodic=True)
         stfts = tf.contrib.signal.stft(tf.squeeze(real_source, 2), frame_length=1024, frame_step=768,
                                        fft_length=1024, window_fn=window)
         real_mag = tf.abs(stfts)
@@ -78,7 +77,7 @@ def test(model_config, partition, model_folder, load_model):
         except tf.errors.OutOfRangeError as e:
             break
 
-    summary = tf.Summary(value=[tf.Summary.Value(tag="test_loss", simple_value=total_loss)])
+    summary = tf.compat.v1.summary(value=[tf.compat.v1.summary.Value(tag="test_loss", simple_value=total_loss)])
     writer.add_summary(summary, global_step=_global_step)
 
     writer.flush()

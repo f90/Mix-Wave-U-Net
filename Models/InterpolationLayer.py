@@ -16,7 +16,7 @@ def learned_interpolation_layer(input, padding, level):
 
     # Construct 2FxF weight matrix, where F is the number of feature channels in the feature map.
     # Matrix is constrained, made up out of two diagonal FxF matrices with diagonal weights w and 1-w. w is constrained to be in [0,1] # mioid
-    weights = tf.get_variable("interp_" + str(level), shape=[features], dtype=tf.float32)
+    weights = tf.compat.v1.get_variable("interp_" + str(level), shape=[features], dtype=tf.float32)
     weights_scaled = tf.nn.sigmoid(weights) # Constrain weights to [0,1]
     counter_weights = 1.0 - weights_scaled # Mirrored weights for the features from the other time step
     conv_weights = tf.expand_dims(tf.concat([tf.expand_dims(tf.diag(weights_scaled), axis=0), tf.expand_dims(tf.diag(counter_weights), axis=0)], axis=0), axis=0)

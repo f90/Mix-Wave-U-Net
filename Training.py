@@ -12,7 +12,6 @@ import Test
 import Evaluate
 
 import functools
-from tensorflow.contrib.signal.python.ops import window_ops
 
 ex = Experiment('Waveunet Training', ingredients=[config_ingredient])
 
@@ -55,7 +54,7 @@ def train(model_config, experiment_id, load_model=None):
     sep_source = separator_sources['mix']
 
     if model_config["network"] == "unet_spectrogram" and not model_config["raw_audio_loss"]:
-        window = functools.partial(window_ops.hann_window, periodic=True)
+        window = functools.partial(tf.signal.hann_window, periodic=True)
         stfts = tf.contrib.signal.stft(tf.squeeze(real_source, 2), frame_length=1024, frame_step=768,
                                        fft_length=1024, window_fn=window)
         real_mag = tf.abs(stfts)
@@ -63,50 +62,53 @@ def train(model_config, experiment_id, load_model=None):
     else:
         separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
        
-#     tf.summary.audio('target_mix', real_source, 44100, max_outputs=1, collections=["sup"])
-#     tf.summary.audio('output_mix', sep_source, 44100, max_outputs=1, collections=["sup"])
+#     tf.compat.v1.summary.audio('target_mix', real_source, 44100, max_outputs=1, collections=["sup"])
+#     tf.compat.v1.summary.audio('output_mix', sep_source, 44100, max_outputs=1, collections=["sup"])
 
     # TRAINING CONTROL VARIABLES
-    global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
-    increment_global_step = tf.assign(global_step, global_step + 1)
+    global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
+    increment_global_step = tf.compat.v1.assign(global_step, global_step + 1)
 
     # Set up optimizers
     separator_vars = Utils.getTrainableVariables("separator")
     print("Sep_Vars: " + str(Utils.getNumParams(separator_vars)))
-    print("Num of variables" + str(len(tf.global_variables())))
+    print("Num of variables" + str(len(tf.compat.v1.global_variables())))
 
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
-        with tf.variable_scope("separator_solver"):
-            separator_solver = tf.train.AdamOptimizer(learning_rate=model_config["init_sup_sep_lr"]).minimize(separator_loss, var_list=separator_vars)
+        with tf.compat.v1.variable_scope("separator_solver"):
+            separator_solver = tf.compat.v1.train.AdamOptimizer(learning_rate=model_config["init_sup_sep_lr"]).minimize(separator_loss, var_list=separator_vars)
 
     # SUMMARIES
-    tf.summary.scalar("sep_loss", separator_loss, collections=["sup"])
-    sup_summaries = tf.summary.merge_all(key='sup')
+    tf.compat.v1.summary.scalar("sep_loss", separator_loss, collections=["sup"])
+    sup_summaries = tf.compat.v1.summary.merge_all(key='sup')
 
     # Start session and queue input threads
     config = tf.ConfigProto()
     config.gpu_options.allow_growth=True
     sess = tf.Session(config=config)
-    sess.run(tf.global_variables_initializer())
-    writer = tf.summary.FileWriter(model_config["log_dir"] + os.path.sep + str(experiment_id),graph=sess.graph)
+    sess.run(tf.compat.v1.global_variables_initializer())
+    writer = tf.compat.v1.summary.FileWriter(model_config["log_dir"] + os.path.sep + str(experiment_id),graph=sess.graph)
 
     # CHECKPOINTING
     # Load pretrained model to continue training, if we are supposed to
     if load_model != None:
-        restorer = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2)
-        print("Num of variables" + str(len(tf.global_variables())))
+        restorer = tf.train.Saver(tf.compat.v1.global_variables(), write_version=tf.compat.v1.train.SaverDef.V2)
+        print("Num of variables" + str(len(tf.compat.v1.global_variables())))
         restorer.restore(sess, load_model)
         print('Pre-trained model restored from file ' + load_model)
 
-    saver = tf.train.Saver(tf.global_variables(), write_version=tf.train.SaverDef.V2)
+    saver = tf.train.Saver(tf.compat.v1.global_variables(), write_version=tf.compat.v1.train.SaverDef.V2)
 
     # Start training loop
     _global_step = sess.run(global_step)
     _init_step = _global_step
     for _ in range(model_config["epoch_it"]):
         # TRAIN SEPARATOR
+        #try:
         _, _sup_summaries = sess.run([separator_solver, sup_summaries])
+        #except tf.errors.OutOfRangeError as e: # Ignore end of dataset and start over again
+        #    continue
         writer.add_summary(_sup_summaries, global_step=_global_step)
 
         # Increment step counter, check if maximum iterations per epoch is achieved and stop in that case

@@ -92,7 +92,7 @@ class UnetAudioSeparator:
         '''
         
         
-        with tf.variable_scope("separator", reuse=reuse):
+        with tf.compat.v1.variable_scope("separator", reuse=reuse):
             enc_outputs = list()
             
             current_layer = input #tf.concat([input[key] for key in input.keys() if key != 'mix'], 2)
@@ -116,9 +116,9 @@ class UnetAudioSeparator:
                     current_layer = Models.InterpolationLayer.learned_interpolation_layer(current_layer, self.padding, i)
                 else:
                     if self.context:
-                        current_layer = tf.image.resize_bilinear(current_layer, [1, current_layer.get_shape().as_list()[2] * 2 - 1], align_corners=True)
+                        current_layer = tf.compat.v1.image.resize_bilinear(current_layer, [1, current_layer.get_shape().as_list()[2] * 2 - 1], align_corners=True)
                     else:
-                        current_layer = tf.image.resize_bilinear(current_layer, [1, current_layer.get_shape().as_list()[2]*2]) # out = in + in - 1
+                        current_layer = tf.compat.v1.image.resize_bilinear(current_layer, [1, current_layer.get_shape().as_list()[2]*2]) # out = in + in - 1
                 current_layer = tf.squeeze(current_layer, axis=1)
                 # UPSAMPLING FINISHED
 

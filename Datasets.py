@@ -15,7 +15,7 @@ import pickle
 
 def take_random_snippets(sample, keys, input_shape, output_shape, num_samples):
     # Take a sample (collection of audio files) and extract snippets from it at a number of random positions
-    start_pos = tf.random_uniform([num_samples], 0, maxval=sample["length"] - input_shape[0], dtype=tf.int64)
+    start_pos = tf.random.uniform([num_samples], 0, maxval=sample["length"] - input_shape[0], dtype=tf.int64)
     return take_snippets_at_pos(sample, keys, start_pos, input_shape[0], output_shape[1], num_samples)
 
 def take_all_snippets(sample, keys, input_shape, output_shape):
@@ -58,7 +58,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
 
     # Set up writers
     num_writers = 1
-    writers = [tf.python_io.TFRecordWriter(records_path + str(i) + ".tfrecords") for i in range(num_writers)]
+    writers = [tf.io.TFRecordWriter(records_path + str(i) + ".tfrecords") for i in range(num_writers)]
 
     # Go through songs and write them to TFRecords
     all_keys = ["mix"] + model_config["source_names"]
@@ -122,11 +122,11 @@ def parse_record(example_proto, source_names, output_channels):
 
     all_names = source_names + ["mix"]
 
-    features = {key : tf.FixedLenSequenceFeature([], allow_missing=True, dtype=tf.float32) for key in all_names}
-    features["length"] = tf.FixedLenFeature([], tf.int64)
-    features["channels"] = tf.FixedLenFeature([], tf.int64)
+    features = {key : tf.io.FixedLenSequenceFeature([], allow_missing=True, dtype=tf.float32) for key in all_names}
+    features["length"] = tf.io.FixedLenFeature([], tf.int64)
+    features["channels"] = tf.io.FixedLenFeature([], tf.int64)
 
-    parsed_features = tf.parse_single_example(example_proto, features)
+    parsed_features = tf.io.parse_single_example(example_proto, features)
 
     # Reshape
     length = tf.cast(parsed_features["length"], tf.int64)
@@ -173,7 +173,7 @@ def get_dataset(model_config, input_shape, output_shape, partition):
         # The dataset structure is a dictionary with "train", "valid", "test" keys, whose entries are lists, where each element represents a song.
         # Each song is represented as a dictionary containing elements mix, acc, vocal or mix, bass, drums, other, vocal depending on the task.
 
-        num_cores = 8
+        num_cores = 1
 
         for curr_partition in ["train", "val", "test"]:
             print("Writing " + curr_partition + " partition...")

@@ -34,7 +34,7 @@ def cfg():
                     'upsampling' : 'linear', # Type of technique used for upsampling the feature maps in a unet architecture, either 'linear' interpolation or 'learned' filling in of extra samples
                     'task' : 'dry', # Type of separation task. 'voice' : Separate music into voice and accompaniment. 'multi_instrument': Separate music into guitar, bass, vocals, drums and other (Sisec)
                     'augmentation' : False, # Random attenuation of source signals to improve generalisation performance (data augmentation)
-                    'raw_audio_loss' : True, # Only active for unet_spectrogram network. True: L2 loss on audio. False: L1 loss on spectrogram magnitudes for training and validation and test loss
+                    'raw_audio_loss' : True, # Only active for unet_spectrogram network. True: L1 loss on audio. False: L2 loss on spectrogram magnitudes for training and validation and test loss
                     'worse_epochs' : 20, # Patience for early stoppping on validation set
                     }
     experiment_id = np.random.randint(0,1000000)
@@ -53,6 +53,16 @@ def baseline_wet():
     model_config = {
         "task" : "wet"
     }
+
+@config_ingredient.named_config
+def context_wet():
+    print("Training wet model")
+    model_config = {
+        "task" : "wet",
+        "num_frames" : 88200,
+        "context" : True
+    }
+    
     
 @config_ingredient.named_config
 def norm_context_wet():
@@ -63,6 +73,40 @@ def norm_context_wet():
         "num_frames" : 88200,
         "context" : True
     }
+
+    
+@config_ingredient.named_config
+def context_dry():
+    print("Training dry model")
+    model_config = {
+        "num_frames" : 88200,
+        "context" : True
+    }
+    
+@config_ingredient.named_config
+def norm_context_dry():
+    print("Training dry model")
+    model_config = {
+        "data_path" : "data_norm",
+        "num_frames" : 88200,
+        "context" : True
+    } 
+    
+@config_ingredient.named_config
+def norm_context_dry_l2():
+    print("Training dry model")
+    model_config = {
+        "data_path" : "data_norm",
+        "num_frames" : 88200,
+        "context" : True,
+        'raw_audio_loss' : False
+    } 
+
+
+
+
+
+
 
 @config_ingredient.named_config
 def baseline_diff():

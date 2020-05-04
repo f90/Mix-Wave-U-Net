@@ -171,3 +171,12 @@ def reconPhase(magnitude, fftWindowSize, hopSize, phaseIterations=10, initPhase=
         else:
             audio = librosa.istft(spectrum, hopSize)
     return audio
+
+
+def preEmphasis(x):
+    
+    x_ = tf.keras.layers.Cropping1D(cropping=(0, 1))(x)
+    paddings = tf.constant([[0, 0,], [1, 0], [0, 0]])
+    x_ = tf.pad(x_, paddings, "CONSTANT")  
+    x_ = tf.scalar_mul(0.95, x_)
+    return tf.subtract(x, x_)

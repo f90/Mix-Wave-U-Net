@@ -60,8 +60,12 @@ def train(model_config, experiment_id, load_model=None):
                                        fft_length=1024, window_fn=window)
         real_mag = tf.abs(stfts)
         separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
+    elif model_config["raw_audio_loss"]:
+#         separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+        # JUST TO SEE IF PREEMPHASIS WORKS BETTER:
+        separator_loss += tf.reduce_mean(tf.abs(Utils.preEmphasis(real_source) - Utils.preEmphasis(sep_source)))
     else:
-        separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+        separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
        
 #     tf.summary.audio('target_mix', real_source, 44100, max_outputs=1, collections=["sup"])
 #     tf.summary.audio('output_mix', sep_source, 44100, max_outputs=1, collections=["sup"])
@@ -131,6 +135,8 @@ def optimise(model_config, experiment_id):
     model_path = None
     best_model_path = None
     for i in range(2):
+#         if i==0:
+#             continue
         worse_epochs = 0
         if i==1:
             print("Finished first round of training, now entering fine-tuning stage")

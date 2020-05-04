@@ -7,6 +7,7 @@ import Datasets
 import Models.UnetSpectrogramSeparator
 import Models.UnetAudioSeparator
 import functools
+import Utils
 
 def test(model_config, partition, model_folder, load_model):
     # Determine input and output shapes
@@ -67,8 +68,12 @@ def test(model_config, partition, model_folder, load_model):
                                        fft_length=1024, window_fn=window)
         real_mag = tf.abs(stfts)
         separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
+    elif model_config["raw_audio_loss"]:
+#         separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+        # JUST TO SEE IF PREEMPHASIS WORKS BETTER:
+        separator_loss += tf.reduce_mean(tf.abs(Utils.preEmphasis(real_source) - Utils.preEmphasis(sep_source)))
     else:
-        separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+        separator_loss += tf.reduce_mean(tf.square(real_source - sep_source))
         
     while True:
         try:

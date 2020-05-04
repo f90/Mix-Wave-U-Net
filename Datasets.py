@@ -85,7 +85,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
                     else:
                         assert(audio.shape[1] == 1)
                         
-                    audio = audio/np.max(np.abs(audio))
+#                     audio = audio/np.max(np.abs(audio)) Remove comment if normalization is desire.
 
 #                 if not model_config["mono_downmix"] and audio.shape[1] == 1:
 #                     print("WARNING: Had to duplicate mono track to generate stereo")

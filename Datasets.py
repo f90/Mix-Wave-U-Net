@@ -173,7 +173,7 @@ def get_dataset(model_config, input_shape, output_shape, partition):
         # The dataset structure is a dictionary with "train", "valid", "test" keys, whose entries are lists, where each element represents a song.
         # Each song is represented as a dictionary containing elements mix, acc, vocal or mix, bass, drums, other, vocal depending on the task.
 
-        num_cores = 1
+        num_cores = 8
 
         for curr_partition in ["train", "val", "test"]:
             print("Writing " + curr_partition + " partition...")
@@ -224,7 +224,7 @@ def get_dataset(model_config, input_shape, output_shape, partition):
         dataset = dataset.repeat()
         dataset = dataset.shuffle(buffer_size=model_config["cache_size"])
 
-    dataset = dataset.apply(tf.contrib.data.batch_and_drop_remainder(model_config["batch_size"]))
+    dataset = dataset.batch(model_config["batch_size"], drop_remainder=True)
     dataset = dataset.prefetch(1)
 
     return dataset

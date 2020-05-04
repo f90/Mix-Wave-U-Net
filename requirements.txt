@@ -9,3 +9,4 @@ museval==0.3.0
 google
 protobuf
 soundfile
+tqdm

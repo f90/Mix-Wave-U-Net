@@ -3,7 +3,7 @@ import numpy as np
 import librosa
 
 def getTrainableVariables(tag=""):
-    return [v for v in tf.trainable_variables() if tag in v.name]
+    return [v for v in tf.compat.v1.trainable_variables() if tag in v.name]
 
 def getNumParams(tensors):
     return np.sum([np.prod(t.get_shape().as_list()) for t in tensors])

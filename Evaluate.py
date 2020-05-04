@@ -45,7 +45,7 @@ def predict(audio, model_config, load_model):
     frame_pred = separator_func(tracks_ph, training=False, return_spectrogram=False, reuse=False)
 
     # Start session and queue input threads
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     sess.run(tf.compat.v1.global_variables_initializer())
 
     # Load model

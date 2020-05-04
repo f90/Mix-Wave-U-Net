@@ -1,4 +1,6 @@
 from sacred import Experiment
+from tqdm import tqdm
+
 from Config import config_ingredient
 import tensorflow as tf
 import numpy as np
@@ -74,7 +76,7 @@ def train(model_config, experiment_id, load_model=None):
     print("Sep_Vars: " + str(Utils.getNumParams(separator_vars)))
     print("Num of variables" + str(len(tf.compat.v1.global_variables())))
 
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
         with tf.compat.v1.variable_scope("separator_solver"):
             separator_solver = tf.compat.v1.train.AdamOptimizer(learning_rate=model_config["init_sup_sep_lr"]).minimize(separator_loss, var_list=separator_vars)
@@ -84,9 +86,9 @@ def train(model_config, experiment_id, load_model=None):
     sup_summaries = tf.compat.v1.summary.merge_all(key='sup')
 
     # Start session and queue input threads
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth=True
-    sess = tf.Session(config=config)
+    sess = tf.compat.v1.Session(config=config)
     sess.run(tf.compat.v1.global_variables_initializer())
     writer = tf.compat.v1.summary.FileWriter(model_config["log_dir"] + os.path.sep + str(experiment_id),graph=sess.graph)
 
@@ -98,12 +100,12 @@ def train(model_config, experiment_id, load_model=None):
         restorer.restore(sess, load_model)
         print('Pre-trained model restored from file ' + load_model)
 
-    saver = tf.train.Saver(tf.compat.v1.global_variables(), write_version=tf.compat.v1.train.SaverDef.V2)
+    saver = tf.compat.v1.train.Saver(tf.compat.v1.global_variables(), write_version=tf.compat.v1.train.SaverDef.V2)
 
     # Start training loop
     _global_step = sess.run(global_step)
     _init_step = _global_step
-    for _ in range(model_config["epoch_it"]):
+    for _ in tqdm(range(model_config["epoch_it"])):
         # TRAIN SEPARATOR
         #try:
         _, _sup_summaries = sess.run([separator_solver, sup_summaries])

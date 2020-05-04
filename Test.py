@@ -37,7 +37,7 @@ def test(model_config, partition, model_folder, load_model):
     global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
 
     # Start session and queue input threads
-    sess = tf.Session()
+    sess = tf.compat.v1.Session()
     sess.run(tf.compat.v1.global_variables_initializer())
     writer = tf.compat.v1.summary.FileWriter(model_config["log_dir"] + os.path.sep +  model_folder, graph=sess.graph)
 

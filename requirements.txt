@@ -4,8 +4,6 @@ tensorflow-gpu==1.15.2
 librosa==0.7.2
 soundfile==0.10.3.post1
 lxml==4.5.0
-musdb==0.3.1
-museval==0.3.0
 google
 protobuf
 soundfile

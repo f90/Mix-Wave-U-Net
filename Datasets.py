@@ -61,7 +61,7 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
     writers = [tf.io.TFRecordWriter(records_path + str(i) + ".tfrecords") for i in range(num_writers)]
 
     # Go through songs and write them to TFRecords
-    all_keys = ["mix"] + model_config["source_names"]
+    all_keys = ["mix"] + model_config["input_names"]
     for sample in sample_list:
         print("Reading song")
         try:
@@ -117,10 +117,10 @@ def write_records(sample_list, model_config, input_shape, output_shape, records_
     for writer in writers:
         writer.close()
 
-def parse_record(example_proto, source_names, output_channels):
+def parse_record(example_proto, input_names, output_channels):
     # Parse record from TFRecord file
 
-    all_names = source_names + ["mix"]
+    all_names = input_names + ["mix"]
 
     features = {key : tf.io.FixedLenSequenceFeature([], allow_missing=True, dtype=tf.float32) for key in all_names}
     features["length"] = tf.io.FixedLenFeature([], tf.int64)
@@ -161,12 +161,10 @@ def get_dataset(model_config, input_shape, output_shape, partition):
     main_folder = os.path.join(model_config["data_path"], dataset_name)
 
     if not os.path.exists(main_folder):
-        # We have to prepare the MUSDB dataset
+        # We have to prepare the dataset
         print("Preparing dataset! This could take a while...")
 
         dataset = get_dataset_pickle(model_config)
-
-      
 
         # Convert audio files into TFRecords now
 
@@ -204,20 +202,20 @@ def get_dataset(model_config, input_shape, output_shape, partition):
     records_files = glob.glob(os.path.join(dataset_folder, "*.tfrecords"))
     random.shuffle(records_files)
     dataset = tf.data.TFRecordDataset(records_files)
-    dataset = dataset.map(lambda x : parse_record(x, model_config["source_names"], output_shape[-1]), num_parallel_calls=model_config["num_workers"])
+    dataset = dataset.map(lambda x : parse_record(x, model_config["input_names"], output_shape[-1]), num_parallel_calls=model_config["num_workers"])
     dataset = dataset.prefetch(10)
 
     # Take random samples from each song
     if partition == "train":
-        dataset = dataset.flat_map(lambda x : take_random_snippets(x, model_config["source_names"] + ["mix"], input_shape[1:], output_shape[1:], model_config["num_snippets_per_track"]))
+        dataset = dataset.flat_map(lambda x : take_random_snippets(x, model_config["input_names"] + ["mix"], input_shape[1:], output_shape[1:], model_config["num_snippets_per_track"]))
     else:
-        dataset = dataset.flat_map(lambda x : take_all_snippets(x, model_config["source_names"] + ["mix"], input_shape[1:], output_shape[1:]))
+        dataset = dataset.flat_map(lambda x : take_all_snippets(x, model_config["input_names"] + ["mix"], input_shape[1:], output_shape[1:]))
     dataset = dataset.prefetch(100)
 
 #     if partition == "train" and model_config["augmentation"]: # If its the train partition, activate data augmentation if desired
 #             dataset = dataset.map(Utils.random_amplify, num_parallel_calls=model_config["num_workers"]).prefetch(100)
 
-    # Cut source outputs to centre part
+    # Cut outputs to centre part
     dataset = dataset.map(lambda x : Utils.crop_sample(x, (input_shape[1] - output_shape[1])//2)).prefetch(100)
 
     if partition == "train": # Repeat endlessly and shuffle when training

@@ -52,7 +52,7 @@ def main(cfg, model_path, output_path):
         
         print(output_track)
         
-        Evaluate.produce_source_estimates(model_config, model_path, track, output_track)
+        Evaluate.produce_outputs(model_config, model_path, track, output_track)
         
         target, sr = Utils.load(track['mix'], sr=None, mono=False) 
         target = target/np.max(np.abs(target))

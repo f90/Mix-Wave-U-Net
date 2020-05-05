@@ -6,7 +6,7 @@ from Utils import LeakyReLU
 import numpy as np
 import Models.OutputLayer
 
-class UnetAudioSeparator:
+class MixWaveUNet:
     '''
     U-Net separator network for singing voice separation.
     Uses valid convolutions, so it predicts for the centre part of the input - only certain input and output shapes are therefore possible (see getpadding function)
@@ -88,7 +88,7 @@ class UnetAudioSeparator:
         Creates symbolic computation graph of the U-Net for a given input batch
         :param input: Input batch of mixtures, 3D tensor [batch_size, num_samples, num_channels]
         :param reuse: Whether to create new parameter variables or reuse existing ones
-        :return: U-Net output: List of source estimates. Each item is a 3D tensor [batch_size, num_out_samples, num_channels]
+        :return: U-Net output: List of audio outputs. Each item is a 3D tensor [batch_size, num_out_samples, num_channels]
         '''
         
         
@@ -141,8 +141,5 @@ class UnetAudioSeparator:
 
             if self.output_type == "direct":
                 return Models.OutputLayer.independent_outputs(current_layer, ['mix'], self.num_outputs, self.output_filter_size, self.padding, out_activation)
-            elif self.output_type == "difference":
-                cropped_input = Utils.crop(input,current_layer.get_shape().as_list(), match_feature_dim=False)
-                return Models.OutputLayer.difference_output(cropped_input, current_layer, ['mix'], self.num_outputs, self.output_filter_size, self.padding, out_activation, training)
             else:
                 raise NotImplementedError

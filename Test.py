@@ -3,22 +3,22 @@ import numpy as np
 import os
 
 import Datasets
-import Models.UnetAudioSeparator
+import Models.MixWaveUNet
 
 def test(model_config, partition, model_folder, load_model):
     # Determine input and output shapes
-    disc_input_shape = [model_config["batch_size"], model_config["num_frames"], 0]  # Shape of discriminator input
+    disc_input_shape = [model_config["batch_size"], model_config["num_frames"], 0]
     if model_config["network"] == "unet":
-        separator_class = Models.UnetAudioSeparator.UnetAudioSeparator(model_config)
+        model_class = Models.MixWaveUNet.MixWaveUNet(model_config)
     else:
         raise NotImplementedError
 
-    sep_input_shape, sep_output_shape = separator_class.get_padding(np.array(disc_input_shape))
-    separator_func = separator_class.get_output
+    input_shape, output_shape = model_class.get_padding(np.array(disc_input_shape))
+    model_func = model_class.get_output
 
     # Creating the batch generators
-    assert ((sep_input_shape[1] - sep_output_shape[1]) % 2 == 0)
-    dataset = Datasets.get_dataset(model_config, sep_input_shape, sep_output_shape, partition=partition)
+    assert ((input_shape[1] - output_shape[1]) % 2 == 0)
+    dataset = Datasets.get_dataset(model_config, input_shape, output_shape, partition=partition)
     iterator = dataset.make_one_shot_iterator()
     batch = iterator.get_next()
     
@@ -28,7 +28,7 @@ def test(model_config, partition, model_folder, load_model):
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch_input, training=False, reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    pred_outputs = model_func(batch_input, training=False, reuse=False)
 
     global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
 
@@ -52,15 +52,15 @@ def test(model_config, partition, model_folder, load_model):
     batch_num = 1
 
     # Supervised objective: MSE for raw audio, MAE for magnitude space (Jansson U-Net)
-    separator_loss = 0
-    real_source = batch['mix']
-    sep_source = separator_sources['mix']
+    loss = 0
+    target_output = batch['mix']
+    pred_output = pred_outputs['mix']
 
-    separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+    loss += tf.reduce_mean(tf.abs(target_output - pred_output))
         
     while True:
         try:
-            curr_loss = sess.run(separator_loss)
+            curr_loss = sess.run(loss)
             total_loss = total_loss + (1.0 / float(batch_num)) * (curr_loss - total_loss)
             batch_num += 1
         except tf.errors.OutOfRangeError as e:

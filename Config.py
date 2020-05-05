@@ -6,15 +6,15 @@ config_ingredient = Ingredient("cfg")
 @config_ingredient.config
 def cfg():
     # Base configuration
-    model_config = {"enst_path" : "/mnt/windaten/Datasets/ENST_Drums", # SET MUSDB PATH HERE, AND SET CCMIXTER PATH IN CCMixter.xml
-                    "estimates_path" : "/mnt/windaten/Source_Estimates", # SET THIS PATH TO WHERE YOU WANT SOURCE ESTIMATES PRODUCED BY THE TRAINED MODEL TO BE SAVED. Folder itself must exist!
+    model_config = {"enst_path" : "/mnt/windaten/Datasets/ENST_Drums", # SET ENST PATH HERE
+                    "estimates_path" : "/mnt/windaten/Source_Estimates", # SET THIS PATH TO WHERE YOU WANT OUTPUTS PRODUCED BY THE TRAINED MODEL TO BE SAVED. Folder itself must exist!
                     "data_path" : "/mnt/windaten/Mix-U-Net Data", # Set this to where the preprocessed dataset should be saved
 
                     "model_base_dir" : "checkpoints", # Base folder for model checkpoints
                     "log_dir" : "logs", # Base folder for logs files
                     "batch_size" : 16, # Batch size
-                    "init_sup_sep_lr" : 1e-4, # Supervised separator learning rate
-                    "epoch_it" : 2000, # Number of supervised separator steps per epoch
+                    "lr" : 1e-4, # Learning rate
+                    "epoch_it" : 2000, # Number of update steps per epoch
                     'cache_size': 1000, # Number of audio snippets buffered in the random shuffle queue. Larger is better, since workers put multiple examples of one song into this queue. The number of different songs that is sampled from with each batch equals cache_size / num_snippets_per_track. Set as high as your RAM allows.
                     'num_workers' : 4, # Number of processes used for each TF map operation used when loading the dataset
                     "num_snippets_per_track" : 100, # Number of snippets that should be extracted from each song at a time after loading it. Higher values make data loading faster, but can reduce the batches song diversity
@@ -27,19 +27,19 @@ def cfg():
                     "num_frames": 16384, # DESIRED number of time frames in the output waveform per samples (could be changed when using valid padding)
                     'expected_sr': 44100,  # Downsample all audio input to this sampling rate
                     'mono_downmix': False,  # Whether to downsample the audio input
-                    'output_type' : 'direct', # Type of output layer, either "direct" or "difference". Direct output: Each source is result of tanh activation and independent. DIfference: Last source output is equal to mixture input - sum(all other sources)
+                    'output_type' : 'direct', # Type of output layer. Direct output: Linear layer without activation
                     'output_activation' : 'linear', # Activation function for output layer. "tanh" or "linear". Linear output involves clipping to [-1,1] at test time, and might be more stable than tanh
-                    'context' : False, # Type of padding for convolutions in separator. If False, feature maps double or half in dimensions after each convolution, and convolutions are padded with zeros ("same" padding). If True, convolution is only performed on the available mixture input, thus the output is smaller than the input
+                    'context' : False, # Type of padding for convolutions in model. If False, feature maps double or half in dimensions after each convolution, and convolutions are padded with zeros ("same" padding). If True, convolution is only performed on the available mixture input, thus the output is smaller than the input
                     'network' : 'unet', # Type of network architecture
                     'upsampling' : 'linear', # Type of technique used for upsampling the feature maps in a unet architecture, either 'linear' interpolation or 'learned' filling in of extra samples
                     'task' : 'dry', # Type of separation task. 'voice' : Separate music into voice and accompaniment. 'multi_instrument': Separate music into guitar, bass, vocals, drums and other (Sisec)
-                    'augmentation' : False, # Random attenuation of source signals to improve generalisation performance (data augmentation)
+                    'augmentation' : False, # Random attenuation of input signals to improve generalisation performance (data augmentation)
                     'worse_epochs' : 20, # Patience for early stoppping on validation set
                     }
     experiment_id = np.random.randint(0,1000000)
         
-    model_config["source_names"] = ['hi-hat', 'kick', 'overhead_L', 'overhead_R', 'snare', 'tom_1', 'tom_2', 'tom_3'] 
-    model_config["num_inputs"] = len(model_config["source_names"])
+    model_config["input_names"] = ['hi-hat', 'kick', 'overhead_L', 'overhead_R', 'snare', 'tom_1', 'tom_2', 'tom_3']
+    model_config["num_inputs"] = len(model_config["input_names"])
     model_config["num_outputs"] = 1 if model_config["mono_downmix"] else 2
 
 @config_ingredient.named_config

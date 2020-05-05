@@ -8,7 +8,7 @@ import os
 
 import Datasets
 import Utils
-import Models.UnetAudioSeparator
+import Models.MixWaveUNet
 import Test
 
 import functools
@@ -25,16 +25,16 @@ def train(model_config, experiment_id, load_model=None):
     # Determine input and output shapes
     disc_input_shape = [model_config["batch_size"], model_config["num_frames"], 0]  # Shape of input
     if model_config["network"] == "unet":
-        separator_class = Models.UnetAudioSeparator.UnetAudioSeparator(model_config)
+        model_class = Models.MixWaveUNet.MixWaveUNet(model_config)
     else:
         raise NotImplementedError
 
-    sep_input_shape, sep_output_shape = separator_class.get_padding(np.array(disc_input_shape))
-    separator_func = separator_class.get_output
+    input_shape, output_shape = model_class.get_padding(np.array(disc_input_shape))
+    model_func = model_class.get_output
 
     # Placeholders and input normalisation
 
-    dataset = Datasets.get_dataset(model_config, sep_input_shape, sep_output_shape, partition="train")
+    dataset = Datasets.get_dataset(model_config, input_shape, output_shape, partition="train")
     iterator = dataset.make_one_shot_iterator()
     batch = iterator.get_next()
     
@@ -44,31 +44,31 @@ def train(model_config, experiment_id, load_model=None):
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch_input, training=True, reuse=False) # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    pred_outputs = model_func(batch_input, training=True, reuse=False)
 
     # Supervised objective: MSE for raw audio, MAE for magnitude space (Jansson U-Net)
-    separator_loss = 0
-    real_source = batch['mix']
-    sep_source = separator_sources['mix']
+    loss = 0
+    target_output = batch['mix']
+    pred_output = pred_outputs['mix']
 
-    separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+    loss += tf.reduce_mean(tf.abs(target_output - pred_output))
 
     # TRAINING CONTROL VARIABLES
     global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
     increment_global_step = tf.compat.v1.assign(global_step, global_step + 1)
 
     # Set up optimizers
-    separator_vars = Utils.getTrainableVariables("separator")
-    print("Sep_Vars: " + str(Utils.getNumParams(separator_vars)))
+    vars = Utils.getTrainableVariables("separator")
+    print("Sep_Vars: " + str(Utils.getNumParams(vars)))
     print("Num of variables" + str(len(tf.compat.v1.global_variables())))
 
     update_ops = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
         with tf.compat.v1.variable_scope("separator_solver"):
-            separator_solver = tf.compat.v1.train.AdamOptimizer(learning_rate=model_config["init_sup_sep_lr"]).minimize(separator_loss, var_list=separator_vars)
+            separator_solver = tf.compat.v1.train.AdamOptimizer(learning_rate=model_config["lr"]).minimize(loss, var_list=vars)
 
     # SUMMARIES
-    tf.compat.v1.summary.scalar("sep_loss", separator_loss, collections=["sup"])
+    tf.compat.v1.summary.scalar("sep_loss", loss, collections=["sup"])
     sup_summaries = tf.compat.v1.summary.merge_all(key='sup')
 
     # Start session and queue input threads
@@ -125,7 +125,7 @@ def optimise(model_config, experiment_id):
         if i==1:
             print("Finished first round of training, now entering fine-tuning stage")
 #             model_config["batch_size"] *= 2
-            model_config["init_sup_sep_lr"] = 1e-5
+            model_config["lr"] = 1e-5
         while worse_epochs < model_config["worse_epochs"]: # Early stopping on validation set after a few epochs
             print("EPOCH: " + str(epoch))
             model_path = train(load_model=model_path)
@@ -155,6 +155,3 @@ def run(cfg):
     # Optimize in a supervised fashion until validation loss worsens
     sup_model_path, sup_loss = optimise()
     print("Supervised training finished! Saved model at " + sup_model_path + ". Performance: " + str(sup_loss))
-
-    # Evaluate trained model on MUSDB
-#     Evaluate.produce_musdb_source_estimates(model_config, sup_model_path, model_config["musdb_path"], model_config["estimates_path"])

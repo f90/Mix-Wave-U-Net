@@ -3,17 +3,13 @@ import numpy as np
 import os
 
 import Datasets
-import Models.UnetSpectrogramSeparator
 import Models.UnetAudioSeparator
-import functools
 
 def test(model_config, partition, model_folder, load_model):
     # Determine input and output shapes
     disc_input_shape = [model_config["batch_size"], model_config["num_frames"], 0]  # Shape of discriminator input
     if model_config["network"] == "unet":
         separator_class = Models.UnetAudioSeparator.UnetAudioSeparator(model_config)
-    elif model_config["network"] == "unet_spectrogram":
-        separator_class = Models.UnetSpectrogramSeparator.UnetSpectrogramSeparator(model_config)
     else:
         raise NotImplementedError
 
@@ -32,7 +28,7 @@ def test(model_config, partition, model_folder, load_model):
 
     # BUILD MODELS
     # Separator
-    separator_sources = separator_func(batch_input, False, not model_config["raw_audio_loss"], reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
+    separator_sources = separator_func(batch_input, training=False, reuse=False)  # Sources are output in order [acc, voice] for voice separation, [bass, drums, other, vocals] for multi-instrument separation
 
     global_step = tf.compat.v1.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False, dtype=tf.int64)
 
@@ -60,14 +56,7 @@ def test(model_config, partition, model_folder, load_model):
     real_source = batch['mix']
     sep_source = separator_sources['mix']
 
-    if model_config["network"] == "unet_spectrogram" and not model_config["raw_audio_loss"]:
-        window = functools.partial(tf.signal.hann_window, periodic=True)
-        stfts = tf.contrib.signal.stft(tf.squeeze(real_source, 2), frame_length=1024, frame_step=768,
-                                       fft_length=1024, window_fn=window)
-        real_mag = tf.abs(stfts)
-        separator_loss += tf.reduce_mean(tf.abs(real_mag - sep_source))
-    else:
-        separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
+    separator_loss += tf.reduce_mean(tf.abs(real_source - sep_source))
         
     while True:
         try:

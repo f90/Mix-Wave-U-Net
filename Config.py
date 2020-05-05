@@ -30,11 +30,10 @@ def cfg():
                     'output_type' : 'direct', # Type of output layer, either "direct" or "difference". Direct output: Each source is result of tanh activation and independent. DIfference: Last source output is equal to mixture input - sum(all other sources)
                     'output_activation' : 'linear', # Activation function for output layer. "tanh" or "linear". Linear output involves clipping to [-1,1] at test time, and might be more stable than tanh
                     'context' : False, # Type of padding for convolutions in separator. If False, feature maps double or half in dimensions after each convolution, and convolutions are padded with zeros ("same" padding). If True, convolution is only performed on the available mixture input, thus the output is smaller than the input
-                    'network' : 'unet', # Type of network architecture, either unet (our model) or unet_spectrogram (Jansson et al 2017 model)
+                    'network' : 'unet', # Type of network architecture
                     'upsampling' : 'linear', # Type of technique used for upsampling the feature maps in a unet architecture, either 'linear' interpolation or 'learned' filling in of extra samples
                     'task' : 'dry', # Type of separation task. 'voice' : Separate music into voice and accompaniment. 'multi_instrument': Separate music into guitar, bass, vocals, drums and other (Sisec)
                     'augmentation' : False, # Random attenuation of source signals to improve generalisation performance (data augmentation)
-                    'raw_audio_loss' : True, # Only active for unet_spectrogram network. True: L1 loss on audio. False: L1 loss on spectrogram magnitudes for training and validation and test loss
                     'worse_epochs' : 20, # Patience for early stoppping on validation set
                     }
     experiment_id = np.random.randint(0,1000000)

@@ -1,15 +1,10 @@
 import numpy as np
 import soundfile
 import tensorflow as tf
-import librosa
 
 import os
-import json
-import glob
 
 import Models.UnetAudioSeparator
-import Models.UnetSpectrogramSeparator
-
 import Utils
 
 def predict(audio, model_config, load_model):
@@ -24,8 +19,6 @@ def predict(audio, model_config, load_model):
     disc_input_shape = [model_config["batch_size"], model_config["num_frames"], 0]  # Shape of discriminator input
     if model_config["network"] == "unet":
         separator_class = Models.UnetAudioSeparator.UnetAudioSeparator(model_config)
-    elif model_config["network"] == "unet_spectrogram":
-        separator_class = Models.UnetSpectrogramSeparator.UnetSpectrogramSeparator(model_config)
     else:
         raise NotImplementedError
 
@@ -42,7 +35,7 @@ def predict(audio, model_config, load_model):
 
     # BUILD MODELS
     # Separator
-    frame_pred = separator_func(tracks_ph, training=False, return_spectrogram=False, reuse=False)
+    frame_pred = separator_func(tracks_ph, training=False, reuse=False)
 
     # Start session and queue input threads
     sess = tf.compat.v1.Session()

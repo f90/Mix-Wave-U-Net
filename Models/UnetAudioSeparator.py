@@ -83,7 +83,7 @@ class UnetAudioSeparator:
             assert(shape[1]%np.power(2,self.num_layers)==0) #input should be divisible by downsapmling factor of the model
             return [shape[0], shape[1], self.num_inputs], [shape[0], shape[1], self.num_outputs]
 
-    def get_output(self, input, training, return_spectrogram=False, reuse=True):
+    def get_output(self, input, training, reuse=True):
         '''
         Creates symbolic computation graph of the U-Net for a given input batch
         :param input: Input batch of mixtures, 3D tensor [batch_size, num_samples, num_channels]

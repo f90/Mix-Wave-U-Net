@@ -60,28 +60,31 @@ Also set the ``estimates_path`` entry of the same ``model_config`` dictionary to
 
 Since the paper investigates many model variants of the Wave-U-Net and also trains the [U-Net proposed for vocal separation](https://ismir2017.smcnus.org/wp-content/uploads/2017/10/171_Paper.pdf), which achieved state-of-the-art performance, as a comparison, we give a list of model variants to train and the command needed to start training them:
 
-| Model name (from paper) | Description                                             | Separate vocals or multi-instrument? | Command for training                          |
-|-------------------------|---------------------------------------------------------|--------------------------------------|-----------------------------------------------|
-| M1                      | Baseline Wave-U-Net model                               | Vocals                               | ``python Training.py``                            |
-| M2                      | M1 + difference output layer                            | Vocals                               | ``python Training.py with cfg.baseline_diff``         |
+| Model name (from paper) | Description                                             | Command for training                          |
+|-------------------------|---------------------------------------------------------|--------------------------------------|
+| Dry                      | Wave-U-Net for dry mixing task                         |``python Training.py with cfg.context_dry``                            |
+| Wet                      | Wave-U-Net for wet mixing task                         | ``python Training.py with cfg.context_wet``         |
 
 # <a name="test"></a> Test trained models on songs!
 
-We provide a pretrained versions of models M4, M6 and M5-HighSR so you can separate any of your songs right away. 
-
 ## Downloading our pretrained models
 
-Download our pretrained models [here](https://www.dropbox.com/s/oq0woy3cmf5s8y7/models.zip?dl=1).
-Unzip the archive into the ``checkpoints`` subfolder in this repository, so that you have one subfolder for each model (e.g. ``REPO/checkpoints/baseline_stereo``)
+We provide pre-trained models so you can mix your own collection of drum recordings right away, see the Github release section for downloads.
+Unzip the obtained archive into the ``checkpoints`` subfolder in this repository, so that you have one subfolder for each model (e.g. ``REPO/checkpoints/dry``)
 
 ## Run pretrained models
 
-For a quick demo on an example song with our pre-trained best vocal separation model (M5-HighSR), one can simply execute
+For a quick demo on a set of drum stems using the wet mixing model, simply execute
 
-`` python Predict.py with cfg.full_44KHz ``
+`` python Predict.py with cfg.context_wet ``
 
-to separate the song "Mallory" included in this repository's ``audio_examples`` subfolder into vocals and accompaniment. The output will be saved next to the input file.
+which will mix the drum stems contained in this repository's ``audio_examples/inputs`` subfolder. The output will be saved into ``audio_examples/outputs``.
 
-To apply our pretrained model to any of your own songs, simply point to its audio file path using the ``input_path`` parameter:
+To use the dry model on the example inputs, use
 
-`` python Predict.py with cfg.full_44KHz input_path="/mnt/medien/Daniel/Music/Dark Passion Play/Nightwish - Bye Bye Beautiful.mp3"``
+`` python Predict.py with cfg.context_dry output_path=audio_examples/outputs/dry_mix.wav model_path=checkpoints/dry/dry-460000``
+
+which loads the model checkpoint file of the dry model fitting to the model configuration that is used.
+``output_path`` specifies a custom output file path for the mixture audio.
+
+To use the model on your own inputs, add the ``input_path`` parameter to the command-line arguments. For example, to set the ``tom_2`` input to ``PATH``, use ``input_path={'tom_2':PATH}``. Set ``PATH`` to ``None`` if you don't want to use this particular stem for mixing. See ``Config.py``for details.  

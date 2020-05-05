@@ -1,5 +1,5 @@
 # Intelligent drum mixing with the Wave-U-Net
-Implementation of the [Mix-Wave-U-Net](https://arxiv.org/abs/1806.03185) for automatic mixing.
+Implementation of the [Mix-Wave-U-Net](https://arxiv.org/abs/1806.03185) for automatic mixing of drums.
 
 ## Listening examples
 

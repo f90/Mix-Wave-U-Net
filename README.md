@@ -3,7 +3,7 @@ Implementation of the [Mix-Wave-U-Net](https://arxiv.org/abs/1806.03185) for aut
 
 ## Listening examples
 
-Listen to drum mixing results [here](audio_examples/outputs/).
+Listen to drum mixing results [here](https://mchijmma.github.io/drum-mixing-wave-u-net/).
 
 ## What is the Mix-Wave-U-Net?
 The Wave-U-Net is a convolutional neural network applicable to audio source separation tasks, which works directly on the raw audio waveform, presented in [this paper](https://arxiv.org/abs/1806.03185).

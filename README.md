@@ -69,7 +69,7 @@ Since the paper investigates many model variants of the Wave-U-Net and also trai
 
 ## Downloading our pretrained models
 
-We provide pre-trained models so you can mix your own collection of drum recordings right away, see the Github release section for downloads.
+We provide pre-trained models so you can mix your own collection of drum recordings right away, see the [Github release section](https://github.com/f90/Mix-Wave-U-Net/releases) for downloads.
 Unzip the obtained archive into the ``checkpoints`` subfolder in this repository, so that you have one subfolder for each model (e.g. ``REPO/checkpoints/dry``)
 
 ## Run pretrained models

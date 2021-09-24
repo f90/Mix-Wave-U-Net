@@ -47,7 +47,7 @@ All the above packages are also saved in the file ``requirements.txt`` located i
 
 To directly use the pre-trained models we provide for download to separate your own songs, now skip directly to the [last section](#test), since the dataset is not needed in that case.
 
-To reproduce the experiments in the paper (train all the models), you need to download the [ENST dataset](https://sigsep.github.io/datasets/musdb.html) and extract it into a folder of your choice. It should then have "drummer_1", "drummer_2" and "drummer_3" subfolders in it.
+To reproduce the experiments in the paper (train all the models), you need to download the [ENST dataset](https://perso.telecom-paristech.fr/grichard/ENST-drums/) and extract it into a folder of your choice. It should then have "drummer_1", "drummer_2" and "drummer_3" subfolders in it.
 
 ### Set-up filepaths
 
